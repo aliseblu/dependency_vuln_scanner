@@ -7,6 +7,11 @@ def create_app():
     app.secret_key = 'dev-secret'
 
     app.register_blueprint(upload_bp)
+
+    @app.route('/')
+    def index():
+        return 'Dependency Vulnerability Scanner Running! Go to /upload to upload file.'
+
     return app
 
 if __name__ == '__main__':
