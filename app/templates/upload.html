@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>上传依赖文件</h2>
-<form method="post" enctype="multipart/form-data" action="/upload">
+<h2>上传依赖文件检测</h2>
+<form method="post" enctype="multipart/form-data" action="/">
     <div class="mb-3">
-        <label for="file" class="form-label">选择 requirements.txt</label>
-        <input class="form-control" type="file" id="file" name="file" required>
+        <label class="form-label">支持文件：requirements.txt, setup.py, Pipfile</label>
+        <input class="form-control" type="file" name="file" required>
     </div>
-    <button type="submit" class="btn btn-primary">上传并扫描</button>
+    <button type="submit" class="btn btn-primary">开始解析与匹配</button>
 </form>
-{% if error %}
-<div class="alert alert-danger mt-3">{{ error }}</div>
-{% endif %}
+{% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
 {% endblock %}

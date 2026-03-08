@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>漏洞库基础维护</h2>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">从 OSV 同步组件漏洞数据到本地库</h5>
+        <form method="POST" class="d-flex gap-2">
+            <input type="hidden" name="action" value="sync">
+            <input type="text" class="form-control" name="pkg_name" placeholder="例如: django, flask, requests" required>
+            <button type="submit" class="btn btn-primary">云端提取并同步</button>
+        </form>
+    </div>
+</div>
+<h4>本地漏洞库数据 (前100条)</h4>
+<table class="table table-sm">
+    <thead><tr><th>ID</th><th>影响组件</th><th>严重程度</th><th>描述</th></tr></thead>
+    <tbody>
+        {% for v in vulns %}
+        <tr><td>{{ v.id }}</td><td>{{ v.package_name }}</td><td>{{ v.severity }}</td><td>{{ v.summary }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

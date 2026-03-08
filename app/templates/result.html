@@ -1,37 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>扫描结果</h2>
-<table class="table table-bordered">
+<h2>风险评估报告 ({{ project_name }})</h2>
+<table class="table table-bordered mt-3">
     <thead class="table-dark">
-        <tr>
-            <th>组件名</th>
-            <th>版本号</th>
-            <th>漏洞ID</th>
-            <th>描述</th>
-            <th>严重程度</th>
-        </tr>
+        <tr><th>组件名</th><th>版本</th><th>漏洞ID</th><th>描述</th><th>严重程度</th></tr>
     </thead>
     <tbody>
     {% for dep in scan_result %}
         {% if dep.vulnerabilities %}
             {% for v in dep.vulnerabilities %}
-            <tr>
-                <td>{{ dep.name }}</td>
-                <td>{{ dep.version }}</td>
-                <td>{{ v.id }}</td>
-                <td>{{ v.summary }}</td>
-                <td>{{ v.severity if v.severity else "N/A" }}</td>
+            <tr class="table-danger">
+                <td>{{ dep.name }}</td><td>{{ dep.version }}</td><td>{{ v.id }}</td>
+                <td>{{ v.summary }}</td><td><b>{{ v.severity }}</b></td>
             </tr>
             {% endfor %}
         {% else %}
             <tr>
-                <td>{{ dep.name }}</td>
-                <td>{{ dep.version }}</td>
-                <td colspan="3">无已知漏洞</td>
+                <td>{{ dep.name }}</td><td>{{ dep.version }}</td><td colspan="3" class="text-success">未发现本地已知漏洞</td>
             </tr>
         {% endif %}
     {% endfor %}
     </tbody>
 </table>
-<a href="/" class="btn btn-secondary mt-3">返回上传</a>
+<div class="d-flex gap-2 mt-3">
+    <a href="/" class="btn btn-secondary">返回继续扫描</a>
+    <form action="/export_txt" method="POST">
+        <input type="hidden" name="scan_data" value="{{ scan_result | tojson | forceescape }}">
+        <input type="hidden" name="project_name" value="{{ project_name }}">
+        <button type="submit" class="btn btn-success">导出 TXT 报告</button>
+    </form>
+</div>
 {% endblock %}

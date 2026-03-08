@@ -1,19 +1,10 @@
-from flask import Flask
-from app.routes.upload import upload_bp
+from app import create_app
+from app.models import db
 
-def create_app():
-    app = Flask(__name__)
-    app.config['UPLOAD_FOLDER'] = 'uploads'
-    app.secret_key = 'dev-secret'
-
-    app.register_blueprint(upload_bp)
-
-    @app.route('/')
-    def index():
-        return 'Dependency Vulnerability Scanner Running! Go to /upload to upload file.'
-
-    return app
+app = create_app()
 
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True)
+    # 启动时自动创建所有数据库表
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5000)
