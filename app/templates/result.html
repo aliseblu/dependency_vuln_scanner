@@ -1,33 +1,72 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>风险评估报告 ({{ project_name }})</h2>
-<table class="table table-bordered mt-3">
-    <thead class="table-dark">
-        <tr><th>组件名</th><th>版本</th><th>漏洞ID</th><th>描述</th><th>严重程度</th></tr>
-    </thead>
-    <tbody>
-    {% for dep in scan_result %}
-        {% if dep.vulnerabilities %}
-            {% for v in dep.vulnerabilities %}
-            <tr class="table-danger">
-                <td>{{ dep.name }}</td><td>{{ dep.version }}</td><td>{{ v.id }}</td>
-                <td>{{ v.summary }}</td><td><b>{{ v.severity }}</b></td>
-            </tr>
-            {% endfor %}
-        {% else %}
-            <tr>
-                <td>{{ dep.name }}</td><td>{{ dep.version }}</td><td colspan="3" class="text-success">未发现本地已知漏洞</td>
-            </tr>
-        {% endif %}
-    {% endfor %}
-    </tbody>
-</table>
-<div class="d-flex gap-2 mt-3">
-    <a href="/" class="btn btn-secondary">返回继续扫描</a>
-    <form action="/export_txt" method="POST">
-        <input type="hidden" name="scan_data" value="{{ scan_result | tojson | forceescape }}">
-        <input type="hidden" name="project_name" value="{{ project_name }}">
-        <button type="submit" class="btn btn-success">导出 TXT 报告</button>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-clipboard2-data text-primary me-2"></i>批量安全检测报告</h2>
+        <p class="text-muted mt-2 mb-0">本次共成功检测 <span class="badge bg-primary px-2 py-1">{{ all_results|length }}</span> 个依赖配置文件</p>
+    </div>
+    <form action="/export_txt" method="POST" class="d-inline">
+        <input type="hidden" name="scan_data" value="{{ all_results | tojson | forceescape }}">
+        <button type="submit" class="btn btn-success btn-custom shadow-sm"><i class="bi bi-download me-1"></i> 导出合并版 TXT 报告</button>
     </form>
+</div>
+
+<div class="accordion shadow-sm rounded mb-4" id="batchResultAccordion">
+    {% for project_name, scan_result in all_results.items() %}
+    <div class="accordion-item border-0 border-bottom">
+        <h2 class="accordion-header" id="heading-{{ loop.index }}">
+            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} bg-light fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}">
+                <i class="bi bi-file-earmark-code text-secondary me-2"></i> {{ project_name }}
+            </button>
+        </h2>
+        <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#batchResultAccordion">
+            <div class="accordion-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="15%" class="ps-4">第三方组件名</th>
+                                <th width="15%">版本约束</th>
+                                <th width="20%">漏洞编号 ID</th>
+                                <th width="10%">风险评级</th>
+                                <th width="40%">漏洞简述</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
+                        {% for dep in scan_result %}
+                            {% if dep.vulnerabilities %}
+                                {% for v in dep.vulnerabilities %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-danger"><i class="bi bi-bug-fill me-1"></i> {{ dep.name }}</td>
+                                    <td><code class="bg-light px-2 py-1 rounded text-dark">{{ dep.version if dep.version else "Any" }}</code></td>
+                                    <td class="font-monospace">{{ v.id }}</td>
+                                    <td>
+                                        {% if v.severity == 'Critical' %}<span class="badge bg-danger">极危</span>
+                                        {% elif v.severity == 'High' %}<span class="badge bg-warning text-dark">高危</span>
+                                        {% elif v.severity == 'Medium' %}<span class="badge bg-info text-dark">中危</span>
+                                        {% else %}<span class="badge bg-secondary">低危</span>{% endif %}
+                                    </td>
+                                    <td class="text-muted small">{{ v.summary }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-success"><i class="bi bi-check-circle-fill me-1"></i> {{ dep.name }}</td>
+                                    <td><code class="bg-light px-2 py-1 rounded text-dark">{{ dep.version if dep.version else "Any" }}</code></td>
+                                    <td colspan="3" class="text-success small">当前版本未命中已知本地漏洞库</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="mt-4 text-center">
+    <a href="/" class="btn btn-outline-secondary btn-custom px-4 rounded-pill"><i class="bi bi-arrow-left"></i> 返回继续扫描</a>
 </div>
 {% endblock %}

@@ -1,10 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block content %}
+<h2 class="fw-bold mb-4 text-dark"><i class="bi bi-clock-history text-primary me-2"></i>我的检测足迹</h2>
 
-</body>
-</html>
+{% if scans and scans|length > 0 %}
+<div class="accordion shadow-sm rounded" id="historyAccordion">
+    {% for s in scans %}
+    <div class="accordion-item border-0 border-bottom">
+        <h2 class="accordion-header" id="heading{{ s.id }}">
+            <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ s.id }}">
+                <i class="bi bi-file-earmark-check text-success me-3 fs-5"></i>
+                <div>
+                    <strong class="text-dark fs-6">{{ s.project_name }}</strong>
+                    <div class="text-muted small mt-1"><i class="bi bi-calendar3"></i> 检测时间: {{ s.scan_time.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+            </button>
+        </h2>
+        <div id="collapse{{ s.id }}" class="accordion-collapse collapse" data-bs-parent="#historyAccordion">
+            <div class="accordion-body bg-white pt-4 pb-4">
+                <form action="/export_txt" method="POST" class="text-end mb-3">
+                    <input type="hidden" name="scan_data" value="{{ s.report_data }}">
+                    <input type="hidden" name="project_name" value="{{ s.project_name }}">
+                    <button type="submit" class="btn btn-sm btn-success btn-custom"><i class="bi bi-download"></i> 补打此报告</button>
+                </form>
+                <div class="bg-light p-3 rounded font-monospace small" style="max-height: 200px; overflow-y: auto;">
+                    {{ s.report_data }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+    <h4 class="text-muted mt-3">暂无检测记录</h4>
+    <p class="text-muted">您还没有进行过任何文件检测，快去上传试试吧！</p>
+    <a href="/" class="btn btn-primary mt-2 rounded-pill px-4">去检测</a>
+</div>
+{% endif %}
+{% endblock %}

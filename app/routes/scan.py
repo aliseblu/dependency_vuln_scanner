@@ -14,31 +14,49 @@ scan_bp = Blueprint('scan', __name__)
 @login_required
 def upload_file():
     if request.method == 'POST':
-        if 'file' not in request.files: return render_template("upload.html", error="未上传文件")
-        file = request.files['file']
+        if 'file' not in request.files:
+            return render_template("upload.html", error="未上传文件")
 
-        allowed_files = ['requirements.txt', 'setup.py', 'Pipfile']
-        if file.filename not in allowed_files:
-            return render_template("upload.html", error="只支持 requirements.txt, setup.py, Pipfile")
+        files = request.files.getlist('file')
+        all_results = {}
+        valid_file_count = 0
 
-        save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(save_path)
+        for file in files:
+            if file.filename == '':
+                continue
 
-        # 1. 解析提取
-        deps = parse_dependency_file(save_path, file.filename)
-        # 2. 本地漏洞比对
-        results = match_vulnerabilities(deps)
+            fname = file.filename.lower()
+            is_valid = False
+            # 模糊匹配逻辑
+            if 'requirements' in fname or 'req' in fname:
+                is_valid = True
+            elif 'setup.py' in fname:
+                is_valid = True
+            elif 'pipfile' in fname:
+                is_valid = True
 
-        # 3. 记录检测历史
-        history = ScanHistory(
-            user_id=current_user.id,
-            project_name=file.filename,
-            report_data=json.dumps(results)
-        )
-        db.session.add(history)
+            if not is_valid:
+                continue
+
+            save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(save_path)
+
+            deps = parse_dependency_file(save_path, file.filename)
+            results = match_vulnerabilities(deps)
+
+            all_results[file.filename] = results
+            valid_file_count += 1
+
+            history = ScanHistory(user_id=current_user.id, project_name=file.filename, report_data=json.dumps(results))
+            db.session.add(history)
+
         db.session.commit()
 
-        return render_template("result.html", scan_result=results, project_name=file.filename)
+        if valid_file_count == 0:
+            return render_template("upload.html",
+                                   error="未发现有效的依赖配置文件。请确保文件名包含 requirements, setup.py 或 Pipfile")
+
+        return render_template("result.html", all_results=all_results)
     return render_template("upload.html")
 
 
@@ -53,32 +71,33 @@ def history():
 @login_required
 def export_txt():
     scan_data = request.form.get('scan_data')
-    project_name = request.form.get('project_name', 'Unknown')
     if not scan_data: return "No data to export", 400
 
-    results = json.loads(scan_data)
+    all_results = json.loads(scan_data)
     lines = [
         "========================================",
-        "      Python 项目组件漏洞检测报告      ",
+        "   SCA 批量依赖组件漏洞检测报告 (合并版)  ",
         "========================================",
-        f"项目文件: {project_name}",
-        f"检测时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        "----------------------------------------",
-        "组件清单及风险评估："
+        f"导出时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"检测文件总数: {len(all_results)}",
+        "========================================"
     ]
 
-    for dep in results:
-        lines.append(f"\n[-] 组件: {dep['name']} | 版本: {dep['version'] if dep['version'] else '未指定'}")
-        if dep['vulnerabilities']:
-            for v in dep['vulnerabilities']:
-                lines.append(f"    [!] 发现漏洞: {v['id']} (严重程度: {v['severity']})")
-                lines.append(f"        描述: {v['summary']}")
-                lines.append(f"        修复建议: 建议参考官方通告升级至安全修复版本。")
-        else:
-            lines.append("    [+] 状态: 安全，未发现本地已知漏洞")
+    for project_name, results in all_results.items():
+        lines.append(f"\n>>> 目标文件: {project_name}")
+        lines.append("----------------------------------------")
+        for dep in results:
+            lines.append(f"[-] 组件: {dep['name']} | 版本: {dep['version'] if dep['version'] else '未指定'}")
+            if dep['vulnerabilities']:
+                for v in dep['vulnerabilities']:
+                    lines.append(f"    [!] 发现漏洞: {v['id']} (严重程度: {v['severity']})")
+                    lines.append(f"        描述: {v['summary']}")
+            else:
+                lines.append("    [+] 状态: 安全")
+        lines.append("\n")
 
     return Response(
         "\n".join(lines),
         mimetype="text/plain",
-        headers={"Content-disposition": "attachment; filename=vuln_report.txt"}
+        headers={"Content-disposition": "attachment; filename=batch_vuln_report.txt"}
     )

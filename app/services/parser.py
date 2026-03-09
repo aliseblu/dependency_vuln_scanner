@@ -2,6 +2,7 @@ import ast
 import toml
 from packaging.requirements import Requirement
 
+
 def parse_requirements_txt(file_path):
     deps = []
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -15,21 +16,29 @@ def parse_requirements_txt(file_path):
                 pass
     return deps
 
+
 def parse_setup_py(file_path):
     deps = []
     with open(file_path, 'r', encoding='utf-8') as f:
         tree = ast.parse(f.read(), filename=file_path)
+
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'setup':
-            for kw in node.keywords:
-                if kw.arg == 'install_requires' and isinstance(kw.value, ast.List):
-                    for elt in kw.value.elts:
-                        if isinstance(elt, ast.Constant):
-                            try:
-                                req = Requirement(elt.value)
-                                deps.append({'name': req.name, 'specifier': str(req.specifier)})
-                            except:
-                                pass
+        if isinstance(node, ast.Call):
+            # 1. 匹配直接调用 setup() 的情况
+            is_setup = isinstance(node.func, ast.Name) and node.func.id == 'setup'
+            # 2. 匹配通过 setuptools.setup() 调用的情况 (修复 edge02 的 Bug)
+            is_setuptools_setup = isinstance(node.func, ast.Attribute) and node.func.attr == 'setup'
+
+            if is_setup or is_setuptools_setup:
+                for kw in node.keywords:
+                    if kw.arg == 'install_requires' and isinstance(kw.value, ast.List):
+                        for elt in kw.value.elts:
+                            if isinstance(elt, ast.Constant):
+                                try:
+                                    req = Requirement(elt.value)
+                                    deps.append({'name': req.name, 'specifier': str(req.specifier)})
+                                except:
+                                    pass
     return deps
 
 def parse_pipfile(file_path):
@@ -45,8 +54,19 @@ def parse_pipfile(file_path):
         pass
     return deps
 
+
 def parse_dependency_file(file_path, filename):
-    if filename == 'requirements.txt': return parse_requirements_txt(file_path)
-    elif filename == 'setup.py': return parse_setup_py(file_path)
-    elif filename.lower() == 'pipfile': return parse_pipfile(file_path)
+    """根据文件名关键字自动分配解析器 (忽略大小写)"""
+    fn = filename.lower()
+
+    # 只要文件名里带 req 或 requirements，就按 requirements.txt 格式解析
+    if 'requirements' in fn or 'req' in fn:
+        return parse_requirements_txt(file_path)
+    # 只要带 setup.py
+    elif 'setup.py' in fn:
+        return parse_setup_py(file_path)
+    # 只要带 pipfile
+    elif 'pipfile' in fn:
+        return parse_pipfile(file_path)
+
     return []
