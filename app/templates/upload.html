@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
+
 <div class="text-center mb-5">
-    <h2 class="fw-bold text-dark"><i class="bi bi-cloud-arrow-up text-primary"></i> 上传依赖配置文件</h2>
+    <h2 class="fw-bold"><i class="bi bi-cloud-arrow-up text-primary"></i> 上传依赖配置文件</h2>
     <p class="text-muted">支持解析 Python 项目的常规依赖约束，极速匹配本地漏洞特征库</p>
 </div>
-
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card border-0 shadow-sm" style="background-color: #f8fbfc; border: 2px dashed #b6d4fe !important;">
+        <div class="card border-0 shadow-sm bg-body-tertiary" style="border: 2px dashed var(--bs-primary-border-subtle) !important;">
             <div class="card-body p-5 text-center">
-                     <form method="post" enctype="multipart/form-data" action="/">
-                    <i class="bi bi-filetype-txt display-1 text-secondary mb-3"></i>
-                    <div class="mb-4">
-                        <label for="file" class="form-label fw-bold text-secondary">请选择依赖文件 (支持按住 Ctrl/Cmd 多选)</label>
-                        <input class="form-control form-control-lg border-primary shadow-sm" type="file" id="file" name="file" multiple required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg btn-custom px-5 rounded-pill shadow">
-                        <i class="bi bi-shield-lock"></i> 开始批量检测
-                    </button>
-                </form>
+                 <form method="post" enctype="multipart/form-data" action="/">
+                <i class="bi bi-filetype-txt display-1 text-secondary mb-3"></i>
+                <div class="mb-4">
+                    <label for="file" class="form-label fw-bold text-body-secondary">请选择依赖文件 (支持按住 Ctrl/Cmd 多选)</label>
+                    <input class="form-control form-control-lg border-primary shadow-sm" type="file" id="file" name="file" multiple required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-custom px-5 rounded-pill shadow">
+                    <i class="bi bi-shield-lock"></i> 开始批量检测
+                </button>
+            </form>
             </div>
         </div>
         {% if error %}
