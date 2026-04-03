@@ -1,0 +1,7 @@
+# setup.py
+setup(
+    extras_require={
+        'dev': ['pytest', 'coverage'],
+        'security': ['cryptography>=3.0', 'PyJWT==1.7.1']
+    }
+)
