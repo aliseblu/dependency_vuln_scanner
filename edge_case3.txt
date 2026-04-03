@@ -1,0 +1,1 @@
+Flask @ git+https://github.com/pallets/flask.git@v1.1.2#egg=Flask

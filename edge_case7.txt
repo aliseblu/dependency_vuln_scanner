@@ -1,0 +1,2 @@
+requessts==2.19.0
+urllib33>=1.20
