@@ -27,8 +27,8 @@ def upload_file():
 
             fname = file.filename.lower()
             is_valid = False
-            # 模糊匹配逻辑
-            if 'requirements' in fname or 'req' in fname:
+            # 模糊匹配逻辑，增加 .txt 后缀支持
+            if 'requirements' in fname or 'req' in fname or fname.endswith('.txt'):
                 is_valid = True
             elif 'setup.py' in fname:
                 is_valid = True
@@ -42,6 +42,7 @@ def upload_file():
             file.save(save_path)
 
             deps = parse_dependency_file(save_path, file.filename)
+            print(f"DEBUG: 从文件 {file.filename} 中提取到的依赖列表: {deps}")  # 添加此行
             results = match_vulnerabilities(deps)
 
             all_results[file.filename] = results
@@ -54,9 +55,11 @@ def upload_file():
 
         if valid_file_count == 0:
             return render_template("upload.html",
-                                   error="未发现有效的依赖配置文件。请确保文件名包含 requirements, setup.py 或 Pipfile")
+                                   error="未发现有效的配置文件。仅支持上传 .txt, .py, .toml 或 Pipfile 类型的文件。")
 
         return render_template("result.html", all_results=all_results)
+
+    # GET 请求返回初始页面 (上一次缺失的就是这一句)
     return render_template("upload.html")
 
 

@@ -56,17 +56,12 @@ def parse_pipfile(file_path):
 
 
 def parse_dependency_file(file_path, filename):
-    """根据文件名关键字自动分配解析器 (忽略大小写)"""
     fn = filename.lower()
-
-    # 只要文件名里带 req 或 requirements，就按 requirements.txt 格式解析
-    if 'requirements' in fn or 'req' in fn:
+    # 增加 or fn.endswith('.txt')
+    if 'requirements' in fn or 'req' in fn or fn.endswith('.txt'):
         return parse_requirements_txt(file_path)
-    # 只要带 setup.py
     elif 'setup.py' in fn:
         return parse_setup_py(file_path)
-    # 只要带 pipfile
     elif 'pipfile' in fn:
         return parse_pipfile(file_path)
-
     return []
